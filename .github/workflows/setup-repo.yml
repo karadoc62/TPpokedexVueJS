@@ -25,7 +25,7 @@ jobs:
 
             console.log(`📝 Found ${issues.length} issues in the seed file`);
 
-            // 1️⃣ Fermer et verrouiller toutes les issues existantes
+            // 1️⃣ Fermer et verrouiller toutes les issues existantes 
             console.log('\n🗑️  Closing existing issues...');
             const existingIssues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
