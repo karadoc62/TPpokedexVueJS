@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { NGrid, NGridItem } from 'naive-ui'
+
 import type { Card } from '@/types'
 
 import PokemonCard from './PokemonCard.vue'
@@ -42,23 +44,24 @@ function toggleCard(card: Card) {
 </script>
 
 <template>
-  <div class="grid">
-    <PokemonCard
-      v-for="card in cards"
-      :key="card.id"
-      :card="card"
-      clickable
-      :selected="isSelected(card)"
-      :disabled="isDisabled(card)"
-      @select="toggleCard"
-    />
-  </div>
+  <NGrid responsive="screen" cols="1 s:2 m:4 l:6 xl:8" :x-gap="12" :y-gap="12">
+    <NGridItem v-for="card in cards" :key="card.id">
+      <div class="grid-item">
+        <PokemonCard
+          :card="card"
+          clickable
+          :selected="isSelected(card)"
+          :disabled="isDisabled(card)"
+          @select="toggleCard"
+        />
+      </div>
+    </NGridItem>
+  </NGrid>
 </template>
 
 <style scoped>
-.grid {
+.grid-item {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  justify-content: center;
 }
 </style>

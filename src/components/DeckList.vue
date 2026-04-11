@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NGrid, NGridItem } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -91,34 +92,32 @@ onMounted(() => {
     </p>
     <p v-else-if="decksWithCards.length === 0">Aucun deck pour le moment.</p>
 
-    <div v-else class="deck-list__items">
-      <article
-        v-for="deck in decksWithCards"
-        :key="deck.id"
-        class="deck-list__item"
-      >
-        <div class="deck-list__content">
-          <h3 class="deck-list__title">{{ deck.name }}</h3>
-          <p class="deck-list__meta">{{ deck.cards.length }} cartes</p>
-        </div>
+    <NGrid v-else responsive="screen" cols="1 l:2" :x-gap="16" :y-gap="16">
+      <NGridItem v-for="deck in decksWithCards" :key="deck.id">
+        <article class="deck-list__item">
+          <div class="deck-list__content">
+            <h3 class="deck-list__title">{{ deck.name }}</h3>
+            <p class="deck-list__meta">{{ deck.cards.length }} cartes</p>
 
-        <div class="deck-list__thumbnails">
-          <img
-            v-for="card in deck.cards"
-            :key="card.id"
-            :src="card.imgUrl"
-            :alt="card.name"
-            class="deck-list__thumbnail"
-          />
-        </div>
+            <div class="deck-list__thumbnails">
+              <img
+                v-for="card in deck.cards"
+                :key="card.id"
+                :src="card.imgUrl"
+                :alt="card.name"
+                class="deck-list__thumbnail"
+              />
+            </div>
+          </div>
 
-        <div class="deck-list__actions">
-          <button @click="handleView(deck)">Voir</button>
-          <button @click="handleEdit(deck)">Modifier</button>
-          <button @click="handleDelete(deck.id)">Supprimer</button>
-        </div>
-      </article>
-    </div>
+          <div class="deck-list__actions">
+            <button @click="handleView(deck)">Voir</button>
+            <button @click="handleEdit(deck)">Modifier</button>
+            <button @click="handleDelete(deck.id)">Supprimer</button>
+          </div>
+        </article>
+      </NGridItem>
+    </NGrid>
   </section>
 </template>
 

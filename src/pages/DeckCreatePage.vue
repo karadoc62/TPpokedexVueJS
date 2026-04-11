@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NGrid, NGridItem } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -82,52 +83,58 @@ const filteredCards = computed(() => {
 
 <template>
   <div class="page">
-    <h1>Créer un deck</h1>
+    <NGrid responsive="screen" cols="1" :x-gap="24" :y-gap="16">
+      <NGridItem>
+        <div class="page__content">
+          <h1>Créer un deck</h1>
 
-    <div class="form-group">
-      <label for="deck-name">Nom du deck</label>
-      <input
-        id="deck-name"
-        v-model="deckName"
-        type="text"
-        placeholder="Mon super deck"
-      />
-    </div>
+          <div class="form-group form-group--compact">
+            <label for="deck-name">Nom du deck</label>
+            <input
+              id="deck-name"
+              v-model="deckName"
+              type="text"
+              placeholder="Mon super deck"
+            />
+          </div>
 
-    <div class="form-group">
-      <label for="search-card">Rechercher une carte</label>
-      <input
-        id="search-card"
-        v-model="search"
-        type="text"
-        placeholder="Ex : Pikachu"
-      />
-    </div>
+          <div class="form-group form-group--compact">
+            <label for="search-card">Rechercher une carte</label>
+            <input
+              id="search-card"
+              v-model="search"
+              type="text"
+              placeholder="Ex : Pikachu"
+            />
+          </div>
 
-    <p class="counter">
-      Cartes sélectionnées : {{ selectedCards.length }} / 10
-    </p>
+          <p class="counter">
+            Cartes sélectionnées : {{ selectedCards.length }} / 10
+          </p>
 
-    <p v-if="error" class="error">
-      {{ error }}
-    </p>
+          <p v-if="error" class="error">
+            {{ error }}
+          </p>
 
-    <p v-if="loading">Chargement des cartes...</p>
+          <p v-if="loading">Chargement des cartes...</p>
 
-    <PokemonCardGrid
-      v-else
-      v-model:selected-cards="selectedCards"
-      :cards="filteredCards"
-      :max="10"
-    />
+          <PokemonCardGrid
+            v-else
+            v-model:selected-cards="selectedCards"
+            :cards="filteredCards"
+            :max="10"
+          />
 
-    <button
-      class="submit-button"
-      :disabled="!isFormValid || submitting"
-      @click="handleSubmit"
-    >
-      {{ submitting ? 'Création...' : 'Créer le deck' }}
-    </button>
+          <button
+            class="submit-button"
+            :disabled="!isFormValid || submitting"
+            @click="handleSubmit"
+          >
+            {{ submitting ? 'Création...' : 'Créer le deck' }}
+          </button>
+        </div>
+      </NGridItem>
+    </NGrid>
   </div>
 </template>
 
@@ -140,6 +147,16 @@ const filteredCards = computed(() => {
   margin-bottom: 16px;
 }
 
+.form-group--compact {
+  max-width: 420px;
+}
+
+.page__content {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
 label {
   display: block;
   margin-bottom: 6px;
@@ -148,7 +165,7 @@ label {
 
 input {
   width: 100%;
-  max-width: 320px;
+  max-width: 100%;
   padding: 8px;
   border: 1px solid #dcdcdc;
   border-radius: 6px;
