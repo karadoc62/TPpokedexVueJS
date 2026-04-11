@@ -1,23 +1,42 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi.js'
-import type { Deck } from '@/types'
+import type { Card, Deck } from '@/types'
 
 const router = useRouter()
 const api = useApi()
 
 const decks = ref<Deck[]>([])
+const allCards = ref<Card[]>([])
 const loading = ref(false)
 const error = ref('')
+
+const decksWithCards = computed(() => {
+  return decks.value.map((deck) => {
+    const normalizedCards = deck.cards.map((deckCard) => {
+      const fullCard = allCards.value.find((card) => card.id === deckCard.id)
+      return fullCard ?? deckCard
+    })
+
+    return {
+      ...deck,
+      cards: normalizedCards,
+    }
+  })
+})
 
 async function loadDecks() {
   loading.value = true
   error.value = ''
 
   try {
-    decks.value = await api.getMyDecks()
+    const decksResponse = await api.getMyDecks()
+    const cardsResponse = await api.getCards()
+
+    decks.value = decksResponse
+    allCards.value = cardsResponse
   } catch (err) {
     error.value =
       err instanceof Error
@@ -70,13 +89,27 @@ onMounted(() => {
     <p v-else-if="error" class="deck-list__error">
       {{ error }}
     </p>
-    <p v-else-if="decks.length === 0">Aucun deck pour le moment.</p>
+    <p v-else-if="decksWithCards.length === 0">Aucun deck pour le moment.</p>
 
     <div v-else class="deck-list__items">
-      <article v-for="deck in decks" :key="deck.id" class="deck-list__item">
+      <article
+        v-for="deck in decksWithCards"
+        :key="deck.id"
+        class="deck-list__item"
+      >
         <div class="deck-list__content">
           <h3 class="deck-list__title">{{ deck.name }}</h3>
           <p class="deck-list__meta">{{ deck.cards.length }} cartes</p>
+        </div>
+
+        <div class="deck-list__thumbnails">
+          <img
+            v-for="card in deck.cards"
+            :key="card.id"
+            :src="card.imgUrl"
+            :alt="card.name"
+            class="deck-list__thumbnail"
+          />
         </div>
 
         <div class="deck-list__actions">
@@ -134,6 +167,22 @@ onMounted(() => {
   margin: 0;
   color: #666;
   font-size: 14px;
+}
+
+.deck-list__thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deck-list__thumbnail {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  background-color: #fff;
+  padding: 2px;
 }
 
 .deck-list__actions {
