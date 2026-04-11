@@ -17,6 +17,7 @@ const selectedCards = ref<Card[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const error = ref('')
+const search = ref('')
 
 const isFormValid = computed(() => {
   return deckName.value.trim() !== '' && selectedCards.value.length === 10
@@ -79,6 +80,16 @@ async function handleSubmit() {
 onMounted(() => {
   loadData()
 })
+
+const filteredCards = computed(() => {
+  const query = search.value.trim().toLowerCase()
+
+  if (query === '') return allCards.value
+
+  return allCards.value.filter((card) =>
+    card.name.toLowerCase().includes(query),
+  )
+})
 </script>
 
 <template>
@@ -98,6 +109,16 @@ onMounted(() => {
         />
       </div>
 
+      <div class="form-group">
+        <label for="search-card">Rechercher une carte</label>
+        <input
+          id="search-card"
+          v-model="search"
+          type="text"
+          placeholder="Ex : Pikachu"
+        />
+      </div>
+
       <p class="counter">
         Cartes sélectionnées : {{ selectedCards.length }} / 10
       </p>
@@ -108,7 +129,7 @@ onMounted(() => {
 
       <PokemonCardGrid
         v-model:selected-cards="selectedCards"
-        :cards="allCards"
+        :cards="filteredCards"
         :max="10"
       />
 
