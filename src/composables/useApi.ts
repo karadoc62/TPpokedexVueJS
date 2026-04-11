@@ -11,6 +11,98 @@ import { useStorage } from './useStorage.js'
 const BASE_URL = import.meta.env.VITE_API_BASE_URL
 const storage = useStorage()
 
+type ApiType =
+  | string
+  | {
+      id?: number
+      name?: string
+    }
+
+interface ApiCard {
+  id: number
+  name?: string
+  hp?: number
+  attack?: number
+  type?: ApiType
+  pokedexNumber?: number
+  imgUrl?: string
+
+  pokedexId?: number
+  lifePoints?: number
+  imageUrl?: string
+}
+
+type ApiDeckCard =
+  | ApiCard
+  | {
+      id?: number
+      deckId?: number
+      cardId?: number
+      card?: ApiCard
+      pokemonCard?: ApiCard
+    }
+
+interface ApiDeck {
+  id: number
+  name: string
+  userId?: number
+  ownerId?: number
+  cards: ApiDeckCard[]
+}
+
+const normalizeCard = (card: ApiCard): Card => {
+  const typeValue =
+    typeof card.type === 'string' ? card.type : (card.type?.name ?? 'Normal')
+
+  return {
+    id: card.id,
+    name: card.name ?? 'Unknown',
+    hp: card.hp ?? card.lifePoints ?? 0,
+    attack: card.attack ?? 0,
+    type: typeValue as Card['type'],
+    pokedexNumber: card.pokedexNumber ?? card.pokedexId ?? 0,
+    imgUrl: card.imgUrl ?? card.imageUrl ?? '',
+  }
+}
+
+const normalizeDeckCard = (
+  deckCard: ApiDeckCard,
+  allCards?: Card[],
+): Card | null => {
+  if ('card' in deckCard && deckCard.card) {
+    return normalizeCard(deckCard.card)
+  }
+
+  if ('pokemonCard' in deckCard && deckCard.pokemonCard) {
+    return normalizeCard(deckCard.pokemonCard)
+  }
+
+  // si c'est déjà une vraie carte
+  if ('name' in deckCard || 'imageUrl' in deckCard || 'imgUrl' in deckCard) {
+    return normalizeCard(deckCard as ApiCard)
+  }
+
+  // si on n'a qu'un cardId, on retrouve la vraie carte depuis /cards
+  if ('cardId' in deckCard && deckCard.cardId !== undefined && allCards) {
+    return allCards.find((card) => card.id === deckCard.cardId) ?? null
+  }
+
+  return null
+}
+
+const normalizeDeck = (deck: ApiDeck, allCards?: Card[]): Deck => {
+  return {
+    id: deck.id,
+    name: deck.name,
+    userId: deck.userId ?? deck.ownerId ?? 0,
+    cards: Array.isArray(deck.cards)
+      ? deck.cards
+          .map((deckCard) => normalizeDeckCard(deckCard, allCards))
+          .filter((card): card is Card => card !== null)
+      : [],
+  }
+}
+
 const request = async <T>(path: string, options: RequestInit = {}) => {
   const token = storage.get<string>('token')
 
@@ -20,7 +112,7 @@ const request = async <T>(path: string, options: RequestInit = {}) => {
   }
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`
+    headers.Authorization = `Bearer ${token}`
   }
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
@@ -35,55 +127,54 @@ const request = async <T>(path: string, options: RequestInit = {}) => {
   return res.json() as Promise<T>
 }
 
-/**
- * Composable exposant toutes les méthodes HTTP de l'API.
- *
- * - Le token JWT est injecté automatiquement dans chaque requête.
- * - En cas d'erreur (4xx, 5xx), une exception est levée avec le message renvoyé par l'API.
- *
- * @example
- * const api = useApi()
- * const cards = await api.getCards()
- */
 export function useApi() {
-  /** Connecte un utilisateur existant. Retourne le token JWT et les infos utilisateur. */
   const signIn = ({ email, password }: SignInPayload) =>
     request<AuthResponse>('/auth/sign-in', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
 
-  /** Crée un nouveau compte. Retourne le token JWT et les infos utilisateur. */
   const signUp = ({ email, password, username }: SignUpPayload) =>
     request<AuthResponse>('/auth/sign-up', {
       method: 'POST',
       body: JSON.stringify({ email, password, username }),
     })
 
-  /** Retourne toutes les cartes Pokémon disponibles. */
-  const getCards = () => request<Card[]>('/cards')
+  const getCards = async () => {
+    const cards = await request<ApiCard[]>('/cards')
+    return cards.map(normalizeCard)
+  }
 
-  /** Retourne les decks de l'utilisateur connecté. */
-  const getMyDecks = () => request<Deck[]>('/decks/mine')
+  const getMyDecks = async () => {
+    const [decks, allCards] = await Promise.all([
+      request<ApiDeck[]>('/decks/mine'),
+      getCards(),
+    ])
 
-  /** Retourne un deck par son id (avec ses cartes). */
-  const getDeck = (id: string | number) => request<Deck>(`/decks/${id}`)
+    return decks.map((deck) => normalizeDeck(deck, allCards))
+  }
 
-  /** Crée un nouveau deck. `cards` est un tableau de 10 `cardId`. */
+  const getDeck = async (id: string | number) => {
+    const [deck, allCards] = await Promise.all([
+      request<ApiDeck>(`/decks/${id}`),
+      getCards(),
+    ])
+
+    return normalizeDeck(deck, allCards)
+  }
+
   const createDeck = ({ name, cards }: DeckPayload) =>
     request<Deck>('/decks', {
       method: 'POST',
       body: JSON.stringify({ name, cards }),
     })
 
-  /** Met à jour le nom et/ou les cartes d'un deck existant. */
   const updateDeck = (id: string | number, { name, cards }: DeckPayload) =>
     request<Deck>(`/decks/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ name, cards }),
     })
 
-  /** Supprime un deck par son id. */
   const deleteDeck = (id: string | number) =>
     request<unknown>(`/decks/${id}`, { method: 'DELETE' })
 

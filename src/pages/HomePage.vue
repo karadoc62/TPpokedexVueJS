@@ -1,5 +1,16 @@
+<script setup lang="ts">
+import DeckList from '@/components/DeckList.vue'
+</script>
+
 <template>
   <div class="container">
-    <NEmpty description="Page d'accueil à implémenter (tickets 2 et 3)" />
+    <h1>Accueil</h1>
+    <DeckList />
   </div>
 </template>
+
+<style scoped>
+.container {
+  padding: 16px;
+}
+</style>
